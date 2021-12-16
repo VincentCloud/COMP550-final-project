@@ -45,7 +45,7 @@ def getData():
         #make two dataframe same length
         c_df = c_df.iloc[:len(a_df)]
 
-    return c_df,a_df
+    return c_df,a_df,df
 
 """
     Data preprocessing
@@ -138,7 +138,7 @@ def get_prediction(data):
 
 
 #read data
-critics_data, audience_data = getData()
+critics_data, audience_data, general_data= getData()
 
 
 print("critics result:")
@@ -147,3 +147,5 @@ get_prediction(critics_data)
 print("audience result:")
 get_prediction(audience_data)
 
+print("general result:")
+get_prediction(general_data)
