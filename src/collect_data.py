@@ -29,7 +29,7 @@ def get_best_movie_ids(num=20):
     return list(movie_ids)[:num]
 
 
-def get_worst_movie_ids(num=20):
+def get_worst_movie_ids(url, num=20):
     soup = BeautifulSoup(urlopen(WORST_MOVIES), 'html5lib')
 
     movies = soup.find_all('div', {'class', 'article_movie_title'})
@@ -96,7 +96,7 @@ def get_source(review_type):
 def get_binary_rating(ratings, source):
     if source == 'critics':
         return ['p' if rating == 'fresh' else 'n' for rating in ratings]
-    return ['p' if rating < 3.0 else 'n' for rating in ratings]
+    return ['n' if rating < 3.0 else 'p' for rating in ratings]
 
 
 def get_review_text(review_data, source):
@@ -109,7 +109,7 @@ def get_review_text(review_data, source):
 
 
 def generate_data():
-    movie_list = get_best_movie_ids() + get_worst_movie_ids()
+    movie_list = get_best_movie_ids(num=40) + get_worst_movie_ids(num=40)
     data_dict = defaultdict(lambda: [])
 
     for movie_id in tqdm(movie_list):
