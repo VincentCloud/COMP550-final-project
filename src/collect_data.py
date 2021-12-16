@@ -113,7 +113,7 @@ def generate_data():
     data_dict = defaultdict(lambda: [])
 
     for movie_id in tqdm(movie_list):
-        for review_type in REVIEW_TYPE_URLS:
+        for review_type in ['All Critics', 'All Audience']:
             movie_reviews = get_movie_reviews(movie_id, review_type)
             data_dict['movie_ids'] += movie_reviews['movie_ids']
             data_dict['sources'] += movie_reviews['source']
