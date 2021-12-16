@@ -13,12 +13,17 @@ REVIEW_TYPE_URLS = {
     'All Audience': '?type=user',
     'Verified Audience': '?type=verified_audience'
 }
-BEST_MOVIES = 'https://www.rottentomatoes.com/top/bestofrt'
-WORST_MOVIES = 'https://editorial.rottentomatoes.com/guide/worst-movies-of-all-time/'
+URLS_1 = ['https://www.rottentomatoes.com/top/bestofrt']
+URLS_2 = ['https://editorial.rottentomatoes.com/guide/worst-movies-of-all-time/',
+          'https://editorial.rottentomatoes.com/guide/essential-comedy-movies/',
+          'https://editorial.rottentomatoes.com/guide/20-movies-to-watch-if-you-loved-inception/',
+          'https://editorial.rottentomatoes.com/guide/sundance-2020-movie-scorecard/',
+          'https://editorial.rottentomatoes.com/guide/worst-superhero-movies/',
+          'https://editorial.rottentomatoes.com/guide/worst-christmas-movies/']
 
 
-def get_best_movie_ids(num=20):
-    soup = BeautifulSoup(urlopen(BEST_MOVIES), 'html5lib')
+def get_best_movie_ids(url, num=20):
+    soup = BeautifulSoup(urlopen(url), 'html5lib')
     # table = soup.find_all('section', {'id': 'top_movies_main'}, recursive=True)
 
     movies = soup.find_all('a', {'href': re.compile(r'^/m/*')})
@@ -26,20 +31,20 @@ def get_best_movie_ids(num=20):
     for movie in movies:
         if movie['href'].split('/')[-1] != '':
             movie_ids.add(movie['href'].split('/')[-1])
-    return list(movie_ids)[:num]
+    return list(movie_ids)[:num] if num else list(movie_ids)
 
 
 def get_worst_movie_ids(url, num=20):
-    soup = BeautifulSoup(urlopen(WORST_MOVIES), 'html5lib')
+    soup = BeautifulSoup(urlopen(url), 'html5lib')
 
     movies = soup.find_all('div', {'class', 'article_movie_title'})
 
     movie_ids = set()
     for movie in movies:
         movie_tag = movie.find('a', {'href': re.compile(r'^https://www.rottentomatoes.com/m/')})
-        if movie_tag['href'].split('/')[-1] != '':
+        if movie_tag and movie_tag['href'] and movie_tag['href'].split('/')[-1] != '':
             movie_ids.add(movie_tag['href'].split('/')[-1])
-    return list(movie_ids)[:num]
+    return list(movie_ids)[:num] if num else list(movie_ids)
 
 
 def get_movie_reviews(movie_id, review_type):
@@ -109,23 +114,34 @@ def get_review_text(review_data, source):
 
 
 def generate_data():
-    movie_list = get_best_movie_ids(num=40) + get_worst_movie_ids(num=40)
+    # movie_list = [get_best_movie_ids(url, num=40) for url in URLS_1] \
+    #              + [get_worst_movie_ids(url, num=40) for url in URLS_2]
+    movie_list = []
+    for url in URLS_1:
+        movie_list += get_best_movie_ids(url, num=None)
+    for url in URLS_2:
+        movie_list += get_worst_movie_ids(url, num=None)
     data_dict = defaultdict(lambda: [])
+
+    df = pd.DataFrame()
 
     for movie_id in tqdm(movie_list):
         for review_type in ['All Critics', 'All Audience']:
-            movie_reviews = get_movie_reviews(movie_id, review_type)
-            data_dict['movie_ids'] += movie_reviews['movie_ids']
-            data_dict['sources'] += movie_reviews['source']
-            data_dict['ratings'] += movie_reviews['ratings']
-            data_dict['ratings_binary'] += movie_reviews['ratings_binary']
-            data_dict['review_texts'] += movie_reviews['review_texts']
-
-    df = pd.DataFrame(data_dict)
+            try:
+                movie_reviews = get_movie_reviews(movie_id, review_type)
+                data_dict['movie_ids'] += movie_reviews['movie_ids']
+                data_dict['sources'] += movie_reviews['source']
+                data_dict['ratings'] += movie_reviews['ratings']
+                data_dict['ratings_binary'] += movie_reviews['ratings_binary']
+                data_dict['review_texts'] += movie_reviews['review_texts']
+            except Exception:
+                print('sh*t something\'s seriously wrong with this set of reviews, let\'s skip to the next one')
+        if len(data_dict['movie_ids']) > 200:
+            print('clearing buffer')
+            df = pd.concat([df, pd.DataFrame(data_dict)])
+            data_dict = defaultdict(lambda: [])
     df.to_csv('../data/dataset.csv', encoding='utf-8')
 
 
 if __name__ == '__main__':
-    # pprint(get_reviews('nomadland', 'All Critics'))
-
     generate_data()
