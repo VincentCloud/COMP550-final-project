@@ -3,7 +3,10 @@
 
 @author: shuhao
 """
+import nltk
 
+from nltk.corpus import wordnet
+from collections import Counter
 import pandas as pd
 import numpy as np
 
@@ -13,6 +16,7 @@ from sklearn.svm import SVC
 
 from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
 
+from nltk.tag import pos_tag
 from nltk.corpus import stopwords
 from nltk import RegexpTokenizer,word_tokenize
 from nltk.stem.snowball import SnowballStemmer
@@ -23,7 +27,7 @@ import re
 samelength = False # If true, make critic and audience dataframe same length by dropping some critic data
 
 tokenizor_decision ="RegexpTokenizer"   #choose between RegexpTokenizer and word_tokenize
-preprocess_decision = ["","porter_stemmer","","snowball_stemmer"] #choose from "stopwords","porter_stemmer","snowball_stemmer","lemmatizer"
+preprocess_decision = ["","","","lemmatizer"] #choose from "stopwords","porter_stemmer","snowball_stemmer","lemmatizer"
 feature_extraction_decision = "TfidfVectorizer"    #choose between CountVectorizer and TfidfVectorizer
 
 
@@ -62,6 +66,7 @@ def preprocessing(line):
          tokenizer = RegexpTokenizer(r'\w+')
          processed_line=tokenizer.tokenize(processed_line)
     
+     
      if "snowball_stemmer" in preprocess_decision:
          stemmer=SnowballStemmer('english')
          processed_line=[stemmer.stem(word) for word in processed_line]
@@ -77,7 +82,8 @@ def preprocessing(line):
      if "lemmatizer" in preprocess_decision:
         lemmatizer=WordNetLemmatizer()
         processed_line=[lemmatizer.lemmatize(word) for word in processed_line]
-          
+ 
+    
      return processed_line
 
 """
@@ -108,6 +114,8 @@ def feature_extraction(X,Y):
 def get_prediction(data):
     X = []
     Y = []
+    tag=[]
+    word_size = 0
     review = data['review_texts'].tolist()
     rating = data['ratings_binary'].tolist();
     
@@ -122,19 +130,31 @@ def get_prediction(data):
     
     
     Y = rating
+    print("  size of features: ",len(X))
+    print("  size of labels: ",len(Y))
+
+        
+    for sentence in X:
+        word_size+=len(word_tokenize(sentence))
+        
+        tag+=( [i for i in pos_tag(word_tokenize(sentence),tagset='universal')])
+
     
-    print("size of features: ",len(X))
-    print("size of labels: ",len(Y))
+    count= Counter([j for i,j in tag])
+    count_dict = count.items()
+    count_dict = {k : v/word_size for k,v in count_dict}
+    new_count_dict  = dict((k, count_dict[k]) for k in ['NOUN', 'VERB','ADJ','ADV'] if k in count_dict)
+    print("  Percentage of each pos tag: ",new_count_dict)
     
     #feature extraction
-    x_train_vect, x_val_vect,x_test_vect,y_train,y_val,y_test = feature_extraction(X,Y)
+    x_train_vect,x_val_vect,x_test_vect,y_train,y_val,y_test = feature_extraction(X,Y)
     
     
     #feed data into model
     LR =LogisticRegression(C=1.2,random_state=0, solver='lbfgs',multi_class='multinomial',max_iter=300)
     LR.fit(x_train_vect, y_train)
     accuracy=LR.score(x_val_vect,y_val)
-    print(" accuracy=", accuracy)
+    print("  accuracy=", accuracy)
 
 
 #read data
