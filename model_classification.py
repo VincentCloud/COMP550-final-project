@@ -30,7 +30,7 @@ tokenizor_decision ="RegexpTokenizer"   #choose between RegexpTokenizer and word
 preprocess_decision = ["","","","lemmatizer"] #choose from "stopwords","porter_stemmer","snowball_stemmer","lemmatizer"
 feature_extraction_decision = "TfidfVectorizer"    #choose between CountVectorizer and TfidfVectorizer
 
-
+file_path = './data/dataset.csv'
 
 
 """
@@ -38,7 +38,7 @@ feature_extraction_decision = "TfidfVectorizer"    #choose between CountVectoriz
 """
 def getData():
 
-    df = pd.read_csv('./data/dataset.csv')
+    df = pd.read_csv(file_path)
     #remove the nan value
     df = df.dropna()
     
@@ -92,8 +92,8 @@ Data split and feature extraction
 
 
 def feature_extraction(X,Y):
-    x_train, x_val,y_train,y_val = model_selection.train_test_split(X,Y,test_size=0.2,random_state=10)
-    x_val, x_test, y_val, y_test = model_selection.train_test_split(x_val,y_val,test_size=0.5,random_state=10)
+    x_train, x_val,y_train,y_val = model_selection.train_test_split(X,Y,test_size=0.2,random_state=14)
+    x_val, x_test, y_val, y_test = model_selection.train_test_split(x_val,y_val,test_size=0.5,random_state=1222)
     
     
     if feature_extraction_decision == "CountVectorizer":
@@ -117,7 +117,7 @@ def get_prediction(data):
     tag=[]
     word_size = 0
     review = data['review_texts'].tolist()
-    rating = data['ratings_binary'].tolist();
+    rating = data['ratings_binary'].tolist()
     
     #data preprocessing
     
